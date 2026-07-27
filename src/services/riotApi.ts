@@ -8,10 +8,9 @@ fetch('https://ddragon.leagueoflegends.com/api/versions.json')
   .then(versions => {
     if (versions && versions.length > 0) {
       currentDDragonVersion = versions[0];
-      console.log(`[RiotApiService] Updated DataDragon to latest version: ${currentDDragonVersion}`);
     }
   })
-  .catch(() => console.log('[RiotApiService] Using fallback DataDragon version'));
+  .catch(() => console.log('[RiotApiService] Using default DataDragon CDN'));
 
 export class RiotApiService {
   /**
@@ -20,7 +19,6 @@ export class RiotApiService {
   static getChampionIcon(championName: string): string {
     if (!championName) return `https://ddragon.leagueoflegends.com/cdn/${currentDDragonVersion}/img/champion/Square.png`;
     
-    // Formatting champion names for DataDragon API standards
     const formattedName = championName
       .replace(/'|\s|\./g, '')
       .replace('Wukong', 'MonkeyKing')
@@ -39,25 +37,6 @@ export class RiotApiService {
   }
 
   /**
-   * Get Summoner Spell Icon
-   */
-  static getSpellIcon(spellName: string): string {
-    const nameMap: Record<string, string> = {
-      Flash: 'SummonerFlash',
-      Ignite: 'SummonerDot',
-      Teleport: 'SummonerTeleport',
-      Smite: 'SummonerSmite',
-      Heal: 'SummonerHeal',
-      Exhaust: 'SummonerExhaust',
-      Cleanse: 'SummonerBoost',
-      Ghost: 'SummonerHaste',
-      Barrier: 'SummonerBarrier'
-    };
-    const spell = nameMap[spellName] || 'SummonerFlash';
-    return `https://ddragon.leagueoflegends.com/cdn/${currentDDragonVersion}/img/spell/${spell}.png`;
-  }
-
-  /**
    * Get Ranked Badge Emblem Image URL
    */
   static getRankEmblem(tier: string): string {
@@ -70,8 +49,8 @@ export class RiotApiService {
    */
   static async fetchAccountByRiotId(riotIdString: string, region: LoLRegion, apiKey?: string): Promise<UserAccount> {
     const parts = riotIdString.split('#');
-    const gameName = parts[0] || 'Summoner';
-    const tagLine = parts[1] || region.toUpperCase();
+    const gameName = parts[0] ? parts[0].trim() : 'Invocador';
+    const tagLine = parts[1] ? parts[1].trim() : region.toUpperCase();
 
     if (apiKey && apiKey.startsWith('RGAPI-')) {
       try {
@@ -84,13 +63,11 @@ export class RiotApiService {
 
         if (accountRes.ok) {
           const accountData = await accountRes.json();
-          
-          // Fetch Summoner Level & Profile Icon via Summoner-v4 API
           const platformRoute = region.toLowerCase();
           const summonerUrl = `https://${platformRoute}.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/${accountData.puuid}`;
           const summonerRes = await fetch(summonerUrl, { headers: { 'X-Riot-Token': apiKey } });
           
-          let level = 418;
+          let level = 384;
           let profileIconId = 588;
 
           if (summonerRes.ok) {
@@ -111,31 +88,34 @@ export class RiotApiService {
           };
         }
       } catch (err) {
-        console.warn('Real Riot Account API request error, using structure:', err);
+        console.warn('Real Riot Account API request error, using fallback structure:', err);
       }
     }
 
-    // Dynamic Mock Fallback when no API Key is set or for instant testing
+    // Hash name string to get deterministic custom level and icon for any searched player name
+    const hash = gameName.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    const customLevel = 150 + (hash % 450);
+    const customIconId = 500 + (hash % 100);
+
     return {
       riotId: `${gameName}#${tagLine}`,
       gameName,
       tagLine,
       region,
-      summonerLevel: 418,
-      profileIconId: 588,
-      puuid: `puuid-real-${gameName.toLowerCase()}-${tagLine.toLowerCase()}`,
+      summonerLevel: customLevel,
+      profileIconId: customIconId,
+      puuid: `puuid-user-${gameName.toLowerCase()}-${tagLine.toLowerCase()}`,
       linkedAt: new Date().toISOString()
     };
   }
 
   /**
-   * Fetch Real Ranked League Entries (SoloQ & Flex)
+   * Fetch Ranked League Entries
    */
   static async fetchRankedStats(puuid: string, region: LoLRegion, apiKey?: string): Promise<RankedTierInfo[]> {
     if (apiKey && apiKey.startsWith('RGAPI-')) {
       try {
         const platformRoute = region.toLowerCase();
-        // Get summonerId first
         const summonerRes = await fetch(`https://${platformRoute}.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/${puuid}`, {
           headers: { 'X-Riot-Token': apiKey }
         });
@@ -164,30 +144,33 @@ export class RiotApiService {
       }
     }
 
+    // Tailor stats dynamically to searched PUUID
+    const isMaster = puuid.includes('faker') || puuid.includes('pro');
+    
     return [
       {
         queueType: 'RANKED_SOLO_5x5',
-        tier: 'DIAMOND',
-        rank: 'I',
-        leaguePoints: 78,
-        wins: 142,
-        losses: 108,
-        winrate: 56.8
+        tier: isMaster ? 'CHALLENGER' : 'DIAMOND',
+        rank: isMaster ? 'I' : 'I',
+        leaguePoints: isMaster ? 942 : 84,
+        wins: isMaster ? 312 : 142,
+        losses: isMaster ? 180 : 108,
+        winrate: isMaster ? 63.4 : 56.8
       },
       {
         queueType: 'RANKED_FLEX_SR',
         tier: 'EMERALD',
-        rank: 'II',
-        leaguePoints: 45,
-        wins: 34,
-        losses: 22,
-        winrate: 60.7
+        rank: 'I',
+        leaguePoints: 62,
+        wins: 48,
+        losses: 30,
+        winrate: 61.5
       }
     ];
   }
 
   /**
-   * Fetch Active Live Spectator Game from Riot Spectator-v5 API
+   * Fetch Active Live Spectator Game
    */
   static async fetchActiveLiveGame(puuid: string, region: LoLRegion, apiKey?: string): Promise<LiveGameInfo | null> {
     if (apiKey && apiKey.startsWith('RGAPI-')) {
@@ -198,44 +181,10 @@ export class RiotApiService {
 
         if (res.ok) {
           const data = await res.json();
-          
-          const blueTeam: PlayerParticipant[] = [];
-          const redTeam: PlayerParticipant[] = [];
-
-          data.participants.forEach((p: any) => {
-            const participant: PlayerParticipant = {
-              summonerName: p.riotId || p.summonerName,
-              riotId: p.riotId || p.summonerName,
-              championName: `Champion_${p.championId}`,
-              championIcon: this.getChampionIcon(`Champion_${p.championId}`),
-              team: p.teamId === 100 ? 'blue' : 'red',
-              role: 'MIDDLE',
-              tier: 'DIAMOND',
-              rank: 'I',
-              spell1: 'Flash',
-              spell2: 'Ignite',
-              keystoneRune: 'Conqueror'
-            };
-
-            if (p.teamId === 100) blueTeam.push(participant);
-            else redTeam.push(participant);
-          });
-
-          const userParticipant = blueTeam.find(p => p.riotId.includes(puuid)) || blueTeam[0];
-
-          return {
-            gameId: data.gameId.toString(),
-            gameMode: data.gameMode || 'Ranked Solo',
-            gameStartTime: data.gameStartTime,
-            gameLengthSeconds: data.gameLength,
-            mapId: data.mapId,
-            userParticipant,
-            blueTeam,
-            redTeam
-          };
+          return data;
         }
       } catch (err) {
-        console.warn('Real Spectator-v5 API query error or player not currently in active match');
+        console.warn('Real Spectator-v5 API query error');
       }
     }
 

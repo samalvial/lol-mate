@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { UserCheck, Globe, CheckCircle2, Sparkles } from 'lucide-react';
+import { UserCheck, CheckCircle2, RefreshCw, AlertCircle } from 'lucide-react';
 import { LoLRegion, UserAccount } from '../types/lol';
 import { RiotApiService } from '../services/riotApi';
 
@@ -25,24 +25,38 @@ export const AccountModal: React.FC<AccountModalProps> = ({ isOpen, onClose, onA
   const [riotIdInput, setRiotIdInput] = useState('Sebam#LoL');
   const [region, setRegion] = useState<LoLRegion>('la2');
   const [loading, setLoading] = useState(false);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const handleLink = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!riotIdInput.trim() || !riotIdInput.includes('#')) {
-      alert('Por favor ingresa un Riot ID válido con el formato Nombre#TAG (ej: Faker#KR1 o tu Riot ID).');
+      setErrorMsg('Por favor ingresa un Riot ID válido con el formato Nombre#TAG (ej: Faker#KR1).');
       return;
     }
 
     setLoading(true);
+    setErrorMsg(null);
+    setSuccessMsg(null);
 
-    const account = await RiotApiService.fetchAccountByRiotId(riotIdInput.trim(), region);
-    
-    // Save linked Riot account locally for seamless return
-    localStorage.setItem('riftcoach_linked_account', JSON.stringify(account));
+    try {
+      const account = await RiotApiService.fetchAccountByRiotId(riotIdInput.trim(), region);
+      
+      // Save linked Riot account locally
+      localStorage.setItem('riftcoach_linked_account', JSON.stringify(account));
 
-    setLoading(false);
-    onAccountLinked(account);
-    onClose();
+      setSuccessMsg(`¡Cuenta ${account.riotId} conectada exitosamente!`);
+      
+      setTimeout(() => {
+        setLoading(false);
+        onAccountLinked(account);
+        onClose();
+        setSuccessMsg(null);
+      }, 700);
+    } catch (err) {
+      setLoading(false);
+      setErrorMsg('Ocurrió un problema al conectar con la cuenta.');
+    }
   };
 
   return (
@@ -70,6 +84,40 @@ export const AccountModal: React.FC<AccountModalProps> = ({ isOpen, onClose, onA
           </div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: '1.4rem', cursor: 'pointer' }}>✕</button>
         </div>
+
+        {errorMsg && (
+          <div style={{
+            padding: '10px 14px',
+            borderRadius: '10px',
+            background: 'rgba(244, 63, 94, 0.15)',
+            border: '1px solid rgba(244, 63, 94, 0.3)',
+            color: '#fb7185',
+            fontSize: '0.85rem',
+            marginBottom: '16px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}>
+            <AlertCircle size={16} /> {errorMsg}
+          </div>
+        )}
+
+        {successMsg && (
+          <div style={{
+            padding: '10px 14px',
+            borderRadius: '10px',
+            background: 'rgba(16, 185, 129, 0.15)',
+            border: '1px solid rgba(16, 185, 129, 0.3)',
+            color: '#34d399',
+            fontSize: '0.85rem',
+            marginBottom: '16px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}>
+            <CheckCircle2 size={16} /> {successMsg}
+          </div>
+        )}
 
         <form onSubmit={handleLink} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div>
@@ -124,9 +172,15 @@ export const AccountModal: React.FC<AccountModalProps> = ({ isOpen, onClose, onA
             type="submit"
             className="apple-button apple-button-primary"
             disabled={loading}
-            style={{ width: '100%', marginTop: '4px' }}
+            style={{ width: '100%', marginTop: '4px', gap: '8px' }}
           >
-            {loading ? 'Conectando...' : 'Conectar Mi Cuenta de LoL'}
+            {loading ? (
+              <>
+                <RefreshCw size={16} className="live-pulse" /> Conectando Cuenta...
+              </>
+            ) : (
+              'Conectar Mi Cuenta de LoL'
+            )}
           </button>
         </form>
       </div>
