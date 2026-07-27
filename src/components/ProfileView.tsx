@@ -1,7 +1,7 @@
 import React from 'react';
 import { UserAccount, RankedTierInfo, ChampionMastery, MatchSummary } from '../types/lol';
 import { RiotApiService } from '../services/riotApi';
-import { Trophy, Swords, Shield, Target, Flame, Key, Radio, RefreshCw, CheckCircle2, Lock, ExternalLink, Globe } from 'lucide-react';
+import { Trophy, Swords, Sparkles, Radio, CheckCircle2, UserCheck } from 'lucide-react';
 import { MonetizationAdBanner } from './MonetizationAdBanner';
 import { CryptoVault } from '../services/cryptoVault';
 
@@ -30,11 +30,11 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 }) => {
   const soloQ = rankedStats.find(s => s.queueType === 'RANKED_SOLO_5x5') || rankedStats[0];
   const creds = CryptoVault.getCredentials();
-  const hasRiotApiKey = !!(creds?.riotApiKey && creds.riotApiKey.startsWith('RGAPI-'));
+  const hasGeminiKey = !!(creds?.geminiApiKey && creds.geminiApiKey.length > 10);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-      {/* Riot API Connection Status Widget */}
+      {/* Account Connection & AI Status Bar */}
       <div className="glass-panel-cyan" style={{
         padding: '16px 20px',
         display: 'flex',
@@ -49,36 +49,36 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             width: '42px',
             height: '42px',
             borderRadius: '12px',
-            background: hasRiotApiKey ? 'rgba(16, 185, 129, 0.15)' : 'rgba(56, 189, 248, 0.15)',
-            border: `1px solid ${hasRiotApiKey ? 'rgba(16, 185, 129, 0.4)' : 'rgba(56, 189, 248, 0.4)'}`,
+            background: 'rgba(16, 185, 129, 0.15)',
+            border: '1px solid rgba(16, 185, 129, 0.4)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            color: hasRiotApiKey ? '#10b981' : '#38bdf8'
+            color: '#10b981'
           }}>
-            <Globe size={22} />
+            <UserCheck size={22} />
           </div>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontSize: '0.88rem', fontWeight: 700, color: '#f8fafc' }}>
-                Integración Riot Games API
+              <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#f8fafc' }}>
+                Cuenta Vinculada: <strong style={{ color: '#38bdf8' }}>{account?.riotId || 'Sebam#LoL'}</strong>
               </span>
               <span style={{
                 fontSize: '0.7rem',
                 padding: '2px 8px',
                 borderRadius: '999px',
-                background: hasRiotApiKey ? 'rgba(16, 185, 129, 0.2)' : 'rgba(240, 185, 11, 0.2)',
-                color: hasRiotApiKey ? '#34d399' : '#f0b90b',
+                background: 'rgba(16, 185, 129, 0.2)',
+                color: '#34d399',
                 fontWeight: 700,
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '4px'
               }}>
-                <CheckCircle2 size={12} /> {hasRiotApiKey ? 'API Key Oficial Activa' : 'Modo Invocador Conectado'}
+                <CheckCircle2 size={12} /> Riot ID Activo
               </span>
             </div>
             <p style={{ fontSize: '0.78rem', color: '#94a3b8', marginTop: '2px' }}>
-              Riot ID vinculado: <strong style={{ color: '#38bdf8' }}>{account?.riotId || 'Sebam#LoL'}</strong> ({account?.region?.toUpperCase() || 'LA2'})
+              Región: {account?.region?.toUpperCase() || 'LA2'} • Gemini AI: <strong style={{ color: hasGeminiKey ? '#34d399' : '#f0b90b' }}>{hasGeminiKey ? 'Conectado' : 'Modo Asistente'}</strong>
             </p>
           </div>
         </div>
@@ -88,12 +88,12 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             Cambiar Riot ID
           </button>
 
-          <button onClick={onOpenVault} className="apple-button apple-button-secondary" style={{ fontSize: '0.8rem' }}>
-            <Key size={14} color="#f0b90b" /> {hasRiotApiKey ? 'Gestionar API Key' : 'Ingresar Riot API Key'}
+          <button onClick={onOpenVault} className="apple-button apple-button-gold" style={{ fontSize: '0.8rem' }}>
+            <Sparkles size={14} /> {hasGeminiKey ? 'Gemini AI Configurado' : 'Configurar Gemini AI'}
           </button>
 
           <button onClick={onCheckLiveGame} className="apple-button apple-button-primary" style={{ fontSize: '0.8rem' }}>
-            <Radio size={14} /> Buscar Partida en Vivo
+            <Radio size={14} /> Partida en Vivo
           </button>
         </div>
       </div>
