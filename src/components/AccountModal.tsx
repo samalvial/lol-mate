@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, UserCheck, Globe, Check, AlertCircle } from 'lucide-react';
+import { Search, UserCheck, Key, ExternalLink, ShieldCheck, CheckCircle2, AlertCircle } from 'lucide-react';
 import { LoLRegion, UserAccount } from '../types/lol';
 import { RiotApiService } from '../services/riotApi';
 import { CryptoVault } from '../services/cryptoVault';
@@ -31,7 +31,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({ isOpen, onClose, onA
   const handleLink = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!riotIdInput.trim() || !riotIdInput.includes('#')) {
-      setError('Por favor ingresa un Riot ID válido con el formato Nombre#TAG (ej: Faker#KR1).');
+      setError('Por favor ingresa un Riot ID válido con el formato Nombre#TAG (ej: Faker#KR1 o tu Riot ID).');
       return;
     }
 
@@ -59,7 +59,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({ isOpen, onClose, onA
       padding: '16px'
     }}>
       <div className="glass-panel" style={{
-        maxWidth: '480px',
+        maxWidth: '500px',
         width: '100%',
         padding: '28px',
         border: '1px solid var(--glass-border-cyan)'
@@ -92,11 +92,11 @@ export const AccountModal: React.FC<AccountModalProps> = ({ isOpen, onClose, onA
         <form onSubmit={handleLink} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div>
             <label style={{ display: 'block', fontSize: '0.85rem', color: '#cbd5e1', marginBottom: '6px', fontWeight: 600 }}>
-              Riot ID (GameName#TagLine):
+              Tu Riot ID (Nombre#TAG):
             </label>
             <input
               type="text"
-              placeholder="Ejemplo: Faker#KR1 o tu Riot ID..."
+              placeholder="Ejemplo: Faker#KR1 o tu Riot ID personal..."
               value={riotIdInput}
               onChange={e => setRiotIdInput(e.target.value)}
               style={{
@@ -138,13 +138,38 @@ export const AccountModal: React.FC<AccountModalProps> = ({ isOpen, onClose, onA
             </select>
           </div>
 
+          <div style={{
+            padding: '12px 14px',
+            borderRadius: '12px',
+            background: 'rgba(56, 189, 248, 0.08)',
+            border: '1px solid rgba(56, 189, 248, 0.2)',
+            fontSize: '0.8rem',
+            color: '#cbd5e1',
+            lineHeight: 1.45
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#38bdf8', fontWeight: 700, marginBottom: '4px' }}>
+              <ShieldCheck size={16} /> Conexión Directa con Riot Games API
+            </div>
+            Puedes conectar tu cuenta ingresando tu Riot ID. Para consultas en vivo con Riot API de producción, puedes agregar tu Riot API Key en la <strong>Bóveda de Seguridad</strong>.
+            <div style={{ marginTop: '6px' }}>
+              <a
+                href="https://developer.riotgames.com/"
+                target="_blank"
+                rel="noreferrer"
+                style={{ color: '#f0b90b', textDecoration: 'none', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+              >
+                Obtener Riot API Key gratis <ExternalLink size={12} />
+              </a>
+            </div>
+          </div>
+
           <button
             type="submit"
             className="apple-button apple-button-primary"
             disabled={loading}
-            style={{ width: '100%', marginTop: '6px' }}
+            style={{ width: '100%', marginTop: '4px' }}
           >
-            {loading ? 'Buscando Cuenta...' : 'Vincular y Buscar Stats'}
+            {loading ? 'Buscando Cuenta de Riot...' : 'Vincular y Buscar Estadísticas'}
           </button>
         </form>
       </div>
