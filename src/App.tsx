@@ -11,7 +11,7 @@ import { MOCK_LIVE_GAME_JUNGLE, MOCK_LIVE_GAME_MID } from './data/mockLiveGame';
 import { CryptoVault } from './services/cryptoVault';
 
 export const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'profile' | 'live' | 'champions'>('live');
+  const [activeTab, setActiveTab] = useState<'profile' | 'live' | 'champions'>('profile');
   
   // App States
   const [userAccount, setUserAccount] = useState<UserAccount | null>(null);
@@ -64,12 +64,20 @@ export const App: React.FC = () => {
     setMatches(mHist);
   };
 
-  const handleRefreshLiveMatch = () => {
-    // Toggle between demo matches to demonstrate live HUD updates
-    if (liveGame.userParticipant.role === 'JUNGLE') {
-      setLiveGame(MOCK_LIVE_GAME_MID);
+  const handleRefreshLiveMatch = async () => {
+    if (!userAccount) return;
+    const creds = CryptoVault.getCredentials();
+    const activeGame = await RiotApiService.fetchActiveLiveGame(userAccount.puuid, userAccount.region, creds?.riotApiKey);
+    
+    if (activeGame) {
+      setLiveGame(activeGame);
     } else {
-      setLiveGame(MOCK_LIVE_GAME_JUNGLE);
+      // Toggle demo game state if no active client match is detected
+      if (liveGame.userParticipant.role === 'JUNGLE') {
+        setLiveGame(MOCK_LIVE_GAME_MID);
+      } else {
+        setLiveGame(MOCK_LIVE_GAME_JUNGLE);
+      }
     }
   };
 
@@ -97,6 +105,9 @@ export const App: React.FC = () => {
             matches={matches}
             isPro={isPro}
             onUpgradePro={() => setIsPro(true)}
+            onOpenAccountModal={() => setIsAccountModalOpen(true)}
+            onOpenVault={() => setIsVaultOpen(true)}
+            onCheckLiveGame={() => setActiveTab('live')}
           />
         )}
 

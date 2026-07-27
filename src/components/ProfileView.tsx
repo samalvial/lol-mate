@@ -1,8 +1,9 @@
 import React from 'react';
 import { UserAccount, RankedTierInfo, ChampionMastery, MatchSummary } from '../types/lol';
 import { RiotApiService } from '../services/riotApi';
-import { Trophy, Swords, Shield, Target, Flame, TrendingUp, Calendar, Clock } from 'lucide-react';
+import { Trophy, Swords, Shield, Target, Flame, Key, Radio, RefreshCw, CheckCircle2, Lock, ExternalLink, Globe } from 'lucide-react';
 import { MonetizationAdBanner } from './MonetizationAdBanner';
+import { CryptoVault } from '../services/cryptoVault';
 
 interface ProfileViewProps {
   account: UserAccount | null;
@@ -11,6 +12,9 @@ interface ProfileViewProps {
   matches: MatchSummary[];
   isPro: boolean;
   onUpgradePro: () => void;
+  onOpenAccountModal: () => void;
+  onOpenVault: () => void;
+  onCheckLiveGame: () => void;
 }
 
 export const ProfileView: React.FC<ProfileViewProps> = ({
@@ -19,13 +23,82 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   masteries,
   matches,
   isPro,
-  onUpgradePro
+  onUpgradePro,
+  onOpenAccountModal,
+  onOpenVault,
+  onCheckLiveGame
 }) => {
   const soloQ = rankedStats.find(s => s.queueType === 'RANKED_SOLO_5x5') || rankedStats[0];
+  const creds = CryptoVault.getCredentials();
+  const hasRiotApiKey = !!(creds?.riotApiKey && creds.riotApiKey.startsWith('RGAPI-'));
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-      {/* Profile Header Banner */}
+      {/* Riot API Connection Status Widget */}
+      <div className="glass-panel-cyan" style={{
+        padding: '16px 20px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        flexWrap: 'wrap',
+        gap: '14px',
+        border: '1px solid var(--glass-border-cyan)'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+          <div style={{
+            width: '42px',
+            height: '42px',
+            borderRadius: '12px',
+            background: hasRiotApiKey ? 'rgba(16, 185, 129, 0.15)' : 'rgba(56, 189, 248, 0.15)',
+            border: `1px solid ${hasRiotApiKey ? 'rgba(16, 185, 129, 0.4)' : 'rgba(56, 189, 248, 0.4)'}`,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: hasRiotApiKey ? '#10b981' : '#38bdf8'
+          }}>
+            <Globe size={22} />
+          </div>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '0.88rem', fontWeight: 700, color: '#f8fafc' }}>
+                Integración Riot Games API
+              </span>
+              <span style={{
+                fontSize: '0.7rem',
+                padding: '2px 8px',
+                borderRadius: '999px',
+                background: hasRiotApiKey ? 'rgba(16, 185, 129, 0.2)' : 'rgba(240, 185, 11, 0.2)',
+                color: hasRiotApiKey ? '#34d399' : '#f0b90b',
+                fontWeight: 700,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}>
+                <CheckCircle2 size={12} /> {hasRiotApiKey ? 'API Key Oficial Activa' : 'Modo Invocador Conectado'}
+              </span>
+            </div>
+            <p style={{ fontSize: '0.78rem', color: '#94a3b8', marginTop: '2px' }}>
+              Riot ID vinculado: <strong style={{ color: '#38bdf8' }}>{account?.riotId || 'Sebam#LoL'}</strong> ({account?.region?.toUpperCase() || 'LA2'})
+            </p>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <button onClick={onOpenAccountModal} className="apple-button apple-button-secondary" style={{ fontSize: '0.8rem' }}>
+            Cambiar Riot ID
+          </button>
+
+          <button onClick={onOpenVault} className="apple-button apple-button-secondary" style={{ fontSize: '0.8rem' }}>
+            <Key size={14} color="#f0b90b" /> {hasRiotApiKey ? 'Gestionar API Key' : 'Ingresar Riot API Key'}
+          </button>
+
+          <button onClick={onCheckLiveGame} className="apple-button apple-button-primary" style={{ fontSize: '0.8rem' }}>
+            <Radio size={14} /> Buscar Partida en Vivo
+          </button>
+        </div>
+      </div>
+
+      {/* Main Profile Header Banner */}
       <div className="glass-panel" style={{
         padding: '24px',
         display: 'flex',
@@ -87,7 +160,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             </div>
 
             <p style={{ fontSize: '0.85rem', color: '#94a3b8', marginTop: '4px' }}>
-              Linked Account • Main Role: Jungle & Mid
+              Cuenta de LoL Conectada • Roles: Jungla & Mid
             </p>
           </div>
         </div>
@@ -121,7 +194,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         )}
       </div>
 
-      {/* Top Champion Masteries Carousel/Grid */}
+      {/* Top Champion Masteries */}
       <div>
         <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
           <Trophy size={18} color="#f0b90b" /> Campeones Principales (Maestría)
